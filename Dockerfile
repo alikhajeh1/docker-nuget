@@ -43,8 +43,7 @@ RUN echo $(date +%s | sha256sum | base64 | head -c 32; echo) > $APP_BASE/.api-ke
     echo "Auto-Generated NuGet API key: $(cat $APP_BASE/.api-key)" && \
     sed -i $APP_BASE/inc/config.php -e "s/ChangeThisKey/$(cat $APP_BASE/.api-key)/"
 
-# Define the volumes
-VOLUME ["$APP_BASE/db", "$APP_BASE/packagefiles"]
+RUN chmod -R ug+rwx /var/log/supervisor
 
 # Fire in the hole!
 CMD ["supervisord", "-n"]
