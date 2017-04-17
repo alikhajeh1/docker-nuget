@@ -2,7 +2,6 @@ FROM nginx
 MAINTAINER Markus Mayer <awesome@wundercart.de>
 
 ENV APP_BASE /var/www
-ENV APP_BRANCH master
 
 # Install HHVM, Supervisor and PHP DBO connectors
 RUN apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0x5a16e7281be7a449 && \
@@ -41,7 +40,11 @@ RUN echo $(date +%s | sha256sum | base64 | head -c 32; echo) > $APP_BASE/.api-ke
     echo "Auto-Generated NuGet API key: $(cat $APP_BASE/.api-key)" && \
     sed -i $APP_BASE/inc/config.php -e "s/ChangeThisKey/$(cat $APP_BASE/.api-key)/"
 
-RUN chmod -R ug+rwx /var/log/supervisor /var/log/hhvm/ /var/www /var/run /etc/nginx/conf.d /var/cache/nginx
+RUN chmod -R ug+rwx /var/log/supervisor /var/log/hhvm/ \
+  /var/www /var/run /etc/nginx/conf.d \
+  /var/cache/nginx /var/cache/hhvm
 
 # Fire in the hole!
 CMD ["supervisord", "-n"]
+
+EXPOSE 8080
