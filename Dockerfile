@@ -41,7 +41,7 @@ RUN echo $(date +%s | sha256sum | base64 | head -c 32; echo) > $APP_BASE/.api-ke
     echo "Auto-Generated NuGet API key: $(cat $APP_BASE/.api-key)" && \
     sed -i $APP_BASE/inc/config.php -e "s/ChangeThisKey/$(cat $APP_BASE/.api-key)/"
 
-RUN chmod -R ug+rwx /var/log/supervisor /var/www /var/run /etc/nginx/conf.d /var/cache/nginx
+RUN chmod -R ug+rwx /var/log/supervisor /var/log/hhvm/ /var/www /var/run /etc/nginx/conf.d /var/cache/nginx
 
 # Fire in the hole!
 CMD ["supervisord", "-n"]
