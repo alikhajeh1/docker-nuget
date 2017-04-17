@@ -3,14 +3,12 @@ MAINTAINER Markus Mayer <awesome@wundercart.de>
 
 ENV APP_BASE /var/www
 ENV APP_BRANCH master
-ENV DEBIAN_VERSION jessie
-ENV HHVM_VERSION 3.13.1~$DEBIAN_VERSION
 
 # Install HHVM, Supervisor and PHP DBO connectors
 RUN apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0x5a16e7281be7a449 && \
-    echo deb http://dl.hhvm.com/debian $DEBIAN_VERSION main | tee /etc/apt/sources.list.d/hhvm.list && \
+    echo deb http://dl.hhvm.com/debian jessie main | tee /etc/apt/sources.list.d/hhvm.list && \
     apt-get update && \
-    apt-get install -y --no-install-recommends hhvm=$HHVM_VERSION \
+    apt-get install -y --no-install-recommends hhvm \
 	                                      php5-mysql php5-sqlite \
                                               supervisor
 
@@ -23,7 +21,7 @@ RUN rm -rf $APP_BASE/.git && \
 
 # Activate the nginx configuration
 RUN rm /etc/nginx/conf.d/default*.conf
-COPY conf/nuget.conf /etc/nginx/conf.d/ 
+COPY conf/nuget.conf /etc/nginx/conf.d/
 
 # Configure file sizes
 RUN echo "post_max_size = 20M" >> /etc/hhvm/php.ini && \
