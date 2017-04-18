@@ -45,12 +45,9 @@ RUN touch /var/log/hhvm/error.log
 RUN chmod -R ug+rwx /var/log/supervisor /var/log/hhvm/ \
   /var/www /var/run /etc/nginx/conf.d \
   /var/cache/nginx /var/cache/hhvm \
-  /usr/bin/hhvm
+  /var/lib/hhvm/sessions
 
 # Fire in the hole!
 CMD ["supervisord", "-n"]
 
 EXPOSE 8080
-
-RUN usermod -a -G root nginx
-RUN usermod -a -G root www-data
