@@ -1,55 +1,46 @@
-FROM nginx
-MAINTAINER Markus Mayer <awesome@wundercart.de>
+FROM nginx:1.11
 
-ENV APP_BASE /var/www
+RUN apt-get update -y && \
+    apt-get install -y --force-yes git curl php5-fpm php5-cli php5-common \
+            php5-mcrypt php5-curl php5-mysql php5-sqlite && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install HHVM, Supervisor and PHP DBO connectors
-RUN apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0x5a16e7281be7a449 && \
-    echo deb http://dl.hhvm.com/debian jessie main | tee /etc/apt/sources.list.d/hhvm.list && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends hhvm \
-	                                      php5-mysql php5-sqlite \
-                                              supervisor
+# PHP-FPM settings
+RUN sed -i "/user  nginx;/c user  root;"                           /etc/nginx/nginx.conf && \
+    sed -i "/memory_limit = /c memory_limit = 128M"                /etc/php5/fpm/php.ini && \
+    sed -i "/max_execution_time = /c max_execution_time = 300"     /etc/php5/fpm/php.ini && \
+    sed -i "/upload_max_filesize = /c upload_max_filesize = 50M"   /etc/php5/fpm/php.ini && \
+    sed -i "/post_max_size = /c post_max_size = 50M"               /etc/php5/fpm/php.ini && \
+    sed -i "/user = /c user = root"                                /etc/php5/fpm/pool.d/www.conf && \
+    sed -i "/;listen.mode = /c listen.mode = 0666"                 /etc/php5/fpm/pool.d/www.conf && \
+    sed -i "/listen.owner = /c listen.owner = root"                /etc/php5/fpm/pool.d/www.conf && \
+    sed -i "/listen.group = /c listen.group = root"                /etc/php5/fpm/pool.d/www.conf && \
+    sed -i "/listen = /c listen = 127.0.0.1:9000"                  /etc/php5/fpm/pool.d/www.conf && \
+    sed -i "/;clear_env = /c clear_env = no"                       /etc/php5/fpm/pool.d/www.conf
 
-# Copy in the project
-RUN rm -rf $APP_BASE
-COPY server $APP_BASE
-RUN rm -rf $APP_BASE/.git && \
-    chown www-data:www-data $APP_BASE/db $APP_BASE/packagefiles && \
-    chown 0770 $APP_BASE/db $APP_BASE/packagefiles
-
-# Activate the nginx configuration
-RUN rm /etc/nginx/conf.d/default*.conf
-COPY conf/nuget.conf /etc/nginx/conf.d/
-
-# Configure file sizes
-RUN echo "post_max_size = 20M" >> /etc/hhvm/php.ini && \
-    echo "upload_max_filesize = 20M" >> /etc/hhvm/php.ini && \
-    perl -pi -e 's/^(\s*)(root.+?;)/\1\2\n\1client_max_body_size 20M;/' /etc/nginx/conf.d/nuget.conf
-
-# Install the supervisor configuration
-COPY conf/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY scripts/*.sh /tmp/
-RUN chmod +x /tmp/*.sh
-
-# The base URL
-ENV BASE_URL /
-
-# Set randomly generated API key
-RUN echo $(date +%s | sha256sum | base64 | head -c 32; echo) > $APP_BASE/.api-key && \
-    echo "Auto-Generated NuGet API key: $(cat $APP_BASE/.api-key)" && \
-    sed -i $APP_BASE/inc/config.php -e "s/ChangeThisKey/$(cat $APP_BASE/.api-key)/"
-
-RUN touch /var/log/hhvm/error.log
-
-RUN chmod -R ug+rwx /var/log/supervisor /var/log/hhvm/ \
-  /var/www /var/run /etc/nginx/conf.d \
-  /var/cache/nginx /var/cache/hhvm \
-  /var/lib/hhvm/sessions
-
-# Fire in the hole!
-CMD ["supervisord", "-n"]
+# Log aggregation
+RUN ln -sf /dev/stdout /var/log/nginx/access.log && \
+    ln -sf /dev/stderr /var/log/nginx/error.log && \
+    ln -sf /dev/stdout /var/log/php5-fpm.log
 
 EXPOSE 8080
 
-RUN usermod -a -G root nginx
+ENV APP_BASE /var/www
+ENTRYPOINT ["/bin/sh", "/var/www/entrypoint.sh"]
+CMD ["/var/www/start.sh"]
+
+COPY ./config/nuget.conf /etc/nginx/conf.d/default.conf
+COPY ./config/*.sh $APP_BASE/
+
+WORKDIR $APP_BASE
+COPY server .
+RUN chown -R 1001:0 /var/www /var/cache/nginx /var/run && \
+    chmod -R a+rwx /var/www /var/cache/nginx /var/run
+
+# Set randomly generated API key
+RUN echo $(date +%s | sha256sum | base64 | head -c 32; echo) > .api-key && \
+    echo "Auto-Generated NuGet API key: $(cat .api-key)" && \
+    sed -i inc/config.php -e "s/ChangeThisKey/$(cat .api-key)/"
+
+USER 1001
