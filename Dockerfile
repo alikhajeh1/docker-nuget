@@ -52,3 +52,4 @@ CMD ["supervisord", "-n"]
 EXPOSE 8080
 
 RUN usermod -a -G root nginx
+RUN usermod -a -G root www-data
