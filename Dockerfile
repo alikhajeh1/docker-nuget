@@ -51,3 +51,5 @@ RUN chmod -R ug+rwx /var/log/supervisor /var/log/hhvm/ \
 CMD ["supervisord", "-n"]
 
 EXPOSE 8080
+
+RUN usermod -a -G root nginx
