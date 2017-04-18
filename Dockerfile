@@ -44,7 +44,8 @@ RUN touch /var/log/hhvm/error.log
 
 RUN chmod -R ug+rwx /var/log/supervisor /var/log/hhvm/ \
   /var/www /var/run /etc/nginx/conf.d \
-  /var/cache/nginx /var/cache/hhvm
+  /var/cache/nginx /var/cache/hhvm \
+  /usr/bin/hhvm
 
 # Fire in the hole!
 CMD ["supervisord", "-n"]
