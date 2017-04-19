@@ -26,14 +26,13 @@ RUN ln -sf /dev/stdout /var/log/nginx/access.log && \
 
 EXPOSE 8080
 
-ENV APP_BASE /var/www
 ENTRYPOINT ["/bin/sh", "/var/www/entrypoint.sh"]
 CMD ["/var/www/start.sh"]
 
 COPY ./config/nuget.conf /etc/nginx/conf.d/default.conf
-COPY ./config/*.sh $APP_BASE/
+COPY ./config/*.sh /var/www/
 
-WORKDIR $APP_BASE
+WORKDIR /var/www
 COPY server .
 RUN chown -R 1001:0 /var/www /var/cache/nginx /var/run && \
     chmod -R a+rwx /var/www /var/cache/nginx /var/run
